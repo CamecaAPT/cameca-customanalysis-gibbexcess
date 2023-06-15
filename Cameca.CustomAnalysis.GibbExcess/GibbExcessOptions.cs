@@ -20,4 +20,28 @@ public class GibbExcessOptions : BindableBase
         get => rangeOfInterest;
         set => SetProperty(ref rangeOfInterest, value);
     }
+
+    private float selectionStart;
+    [Display(Name = "Start of Selection (nm)")]
+    public float SelectionStart
+    {
+        get => selectionStart;
+        set => SetProperty(ref selectionStart, value);
+    }
+
+    private float selectionEnd;
+    [Display(Name = "End of selection (nm)")]
+    public float SelectionEnd
+    {
+        get => selectionEnd;
+        set => SetProperty(ref selectionEnd, value);
+    }
+
+    private float detectorEfficiency;
+    [Display(Name = "Detector Efficiency", Description = "Corresponds to the physical machine used to take this measurement")]
+    public float DetectorEfficiency
+    {
+        get => detectorEfficiency;
+        set => SetProperty(ref detectorEfficiency, value);
+    }
 }

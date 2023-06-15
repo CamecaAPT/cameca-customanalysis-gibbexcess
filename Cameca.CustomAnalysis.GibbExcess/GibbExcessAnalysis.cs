@@ -1,9 +1,11 @@
 ﻿using Cameca.CustomAnalysis.Interface;
 using Cameca.CustomAnalysis.Utilities;
 using Cameca.CustomAnalysis.Utilities.Legacy;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows;
 using System.Windows.Documents;
 
@@ -34,6 +36,8 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
     /// <param name="viewBuilder">Defines how the result will be represented in AP Suite</param>
     public void Run(IIonData ionData, GibbExcessOptions options, IViewBuilder viewBuilder)
     {
+        //for now going to have to assume that the 1d ion comp is along the Z axis
+
         if (!IsRangeValid(ionData, options.RangeOfInterest, out var validRangeEnd))
         {
             MessageBox.Show($"Invalid Range Specified. Enter value from 1 to {validRangeEnd} inclusive.");
@@ -47,7 +51,9 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
         }
 
         var rawLines = ReadFile(options.CsvFilePath); //2 is nickel
-        var gibbs = GibbsCalculation(rawLines, options.RangeOfInterest);
+        var gibbs = GibbsCalculation(rawLines, options.RangeOfInterest, options.SelectionStart, options.SelectionEnd, options.DetectorEfficiency, ionData);
+
+        viewBuilder.AddText("Gibbs Value", $"{gibbs}");
     }
 
     static bool IsRangeValid(IIonData ionData, int rangeOfInterest, out int validRangeEnd)
@@ -56,17 +62,58 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
         return (rangeOfInterest >= 1 && rangeOfInterest <= validRangeEnd);
     }
 
-    static float GibbsCalculation(List<string[]> rawLines, int ionTypeIndex)
-    {
+    enum Coordinate { X, Y, Z };
 
+    static double CrossSectionCalculation(IIonData ionData, Coordinate coord)
+    {
+        var diff = ionData.Extents.Max - ionData.Extents.Min;
+        if (coord == Coordinate.X)
+            return diff.Y * diff.Z;
+        if (coord == Coordinate.Y)
+            return diff.X * diff.Z;
+        return diff.X * diff.Y;
+    }
+
+    static double GibbsCalculation(List<string[]> rawLines, int ionTypeIndex, float selectionStart, float selectionEnd, float detectorEfficiency, IIonData ionData)
+    {
+        float deltaDistance = float.Parse(rawLines[1][0]) - float.Parse(rawLines[0][0]);
+        int numIn = (int)((selectionEnd - selectionStart) / deltaDistance) + 1;
+
+        int[] inCounts = new int[numIn];
+        int[] outCounts = new int[rawLines.Count - numIn];
+
+        int inIndex = 0;
+        int outIndex = 0;
+        int totalMatrixCount = 0;
         foreach (string[] line in rawLines)
         {
+            float rowThisDistance = float.Parse(line[0]);
             int rowTotalIonCount = int.Parse(line[1]);
-            int rowThisIonCount = (int)(rowTotalIonCount * float.Parse(line[1 + ionTypeIndex]) * .01);
-
+            int rowThisIonCount = (int)Math.Round((rowTotalIonCount * float.Parse(line[1 + ionTypeIndex]) * .01));
+            if (rowThisDistance >= selectionStart && rowThisDistance <= selectionEnd)
+            {
+                inCounts[inIndex++] = rowThisIonCount;
+            }
+            else
+            {
+                outCounts[outIndex++] = rowThisIonCount;
+                totalMatrixCount += rowThisIonCount;
+            }
         }
 
-        return 0f;
+        double averageMatrix = (double)totalMatrixCount / outCounts.Length;
+
+        double peakIons = 0;
+
+        foreach(int inCount in inCounts)
+            peakIons += (inCount - averageMatrix);
+        foreach (int outCount in outCounts)
+            peakIons += (outCount - averageMatrix);
+
+        double theoreticalIons = peakIons / detectorEfficiency;
+
+
+        return theoreticalIons / CrossSectionCalculation(ionData, Coordinate.Z);
     }
 
     static List<string[]> ReadFile(string filePath)
