@@ -39,6 +39,13 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
             MessageBox.Show($"Invalid Range Specified. Enter value from 1 to {validRangeEnd} inclusive.");
             return;
         }
+
+        if(!File.Exists(options.CsvFilePath))
+        {
+            MessageBox.Show($"Bad filepath for CSV Input File.");
+            return;
+        }
+
         var rawLines = ReadFile(options.CsvFilePath); //2 is nickel
         var gibbs = GibbsCalculation(rawLines, options.RangeOfInterest);
     }
