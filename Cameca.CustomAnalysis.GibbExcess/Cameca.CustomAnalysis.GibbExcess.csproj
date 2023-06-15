@@ -19,7 +19,7 @@
 
 	<PropertyGroup Label="Package">
 		<Title>GibbExcess</Title>
-		<Authors>AuthorsPlaceholder</Authors>
+		<Authors>CAMECA Instruments Inc.</Authors>
 		<Description>Extension to calculate the Gibbsian excess from a given ROI</Description>
 		<Copyright>Copyright © AuthorsPlaceholder 2023 All rights reserved.</Copyright>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -30,7 +30,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<IncludeBuildOutput>true</IncludeBuildOutput>
-		<NuspecFile>GibbExcess.nuspec</NuspecFile>
+		<NuspecFile>Package.nuspec</NuspecFile>
 	</PropertyGroup>
 
 	<ItemGroup Label="Package Dependencies">
