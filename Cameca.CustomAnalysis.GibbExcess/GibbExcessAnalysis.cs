@@ -1,6 +1,11 @@
 ﻿using Cameca.CustomAnalysis.Interface;
 using Cameca.CustomAnalysis.Utilities;
 using Cameca.CustomAnalysis.Utilities.Legacy;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Windows;
+using System.Windows.Documents;
 
 namespace Cameca.CustomAnalysis.GibbExcess;
 
@@ -29,6 +34,59 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
     /// <param name="viewBuilder">Defines how the result will be represented in AP Suite</param>
     public void Run(IIonData ionData, GibbExcessOptions options, IViewBuilder viewBuilder)
     {
-        // TODO: Add custom analysis logic
+        if (!IsRangeValid(ionData, options.RangeOfInterest, out var validRangeEnd))
+        {
+            MessageBox.Show($"Invalid Range Specified. Enter value from 1 to {validRangeEnd} inclusive.");
+            return;
+        }
+        var rawLines = ReadFile(options.CsvFilePath); //2 is nickel
+        var gibbs = GibbsCalculation(rawLines, options.RangeOfInterest);
+    }
+
+    static bool IsRangeValid(IIonData ionData, int rangeOfInterest, out int validRangeEnd)
+    {
+        validRangeEnd = ionData.GetIonTypeCounts().Count;
+        return (rangeOfInterest >= 1 && rangeOfInterest <= validRangeEnd);
+    }
+
+    static float GibbsCalculation(List<string[]> rawLines, int ionTypeIndex)
+    {
+
+        foreach (string[] line in rawLines)
+        {
+            int rowTotalIonCount = int.Parse(line[1]);
+            int rowThisIonCount = (int)(rowTotalIonCount * float.Parse(line[1 + ionTypeIndex]) * .01);
+
+        }
+
+        return 0f;
+    }
+
+    static List<string[]> ReadFile(string filePath)
+    {
+        List<string[]> csvLines = new();
+
+        using (var reader = new StreamReader(filePath))
+        {
+            //get rid of header information
+            reader.ReadLine();
+            reader.ReadLine();
+
+            
+            while(!reader.EndOfStream)
+            {
+                var line = reader.ReadLine();
+                var values = line.Split(",");
+                if(values.Length <= 1)
+                    continue;
+                int thisBoxIonCount = int.Parse(values[1]);
+                if (thisBoxIonCount == 0)
+                    continue;
+
+                csvLines.Add(values);
+            }
+        }
+
+        return csvLines;
     }
 }
