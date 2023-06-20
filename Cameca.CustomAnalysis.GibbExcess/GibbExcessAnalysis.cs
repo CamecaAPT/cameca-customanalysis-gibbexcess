@@ -15,7 +15,6 @@ namespace Cameca.CustomAnalysis.GibbExcess;
 
 internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
 {
-    /* Services defined by the Cameca.CustomAnalysis.Interface APS can be injected into the constructor for later use.
     private readonly IIsosurfaceAnalysis _isosurfaceAnalysis;
     const int ROUNDING_LENGTH = 3;
 
@@ -23,7 +22,6 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
     {
         _isosurfaceAnalysis = isosurfaceAnalysis;
     }
-    //*/
 
     /// <summary>
     /// Main custom analysis execution method.
