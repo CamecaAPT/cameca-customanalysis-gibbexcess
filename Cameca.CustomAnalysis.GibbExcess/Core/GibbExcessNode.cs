@@ -15,4 +15,10 @@ internal class GibbExcessNode : LegacyCustomAnalysisNodeBase<GibbExcessAnalysis,
         : base(services, analysis)
     {
     }
+
+    protected override void OnCreated(NodeCreatedEventArgs eventArgs)
+    {
+        base.OnCreated(eventArgs);
+        Analysis.ID = eventArgs.NodeId;
+    }
 }
