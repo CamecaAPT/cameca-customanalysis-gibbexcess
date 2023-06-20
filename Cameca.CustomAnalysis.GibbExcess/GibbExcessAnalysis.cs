@@ -129,21 +129,9 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
             //Cylinder
             else if(reg.Shape == Shape.Cylinder)
             {
-                if (coord == Coordinate.X)
-                {
-                    area = Math.PI * (scale.Y / 2) * (scale.Z / 2);
-                    return true;
-                }
-                else if (coord == Coordinate.Y)
-                {
-                    area = Math.PI * (scale.X / 2) * (scale.Z / 2);
-                    return true;
-                }
-                else //Z direction
-                {
-                    area = Math.PI * (scale.X / 2) * (scale.Y / 2);
-                    return true;
-                }
+                //doesn't make sense to take the area of any other direction BUT z. Throw error / display message if ask for x or y?
+                area = Math.PI * (scale.X / 2) * (scale.Y / 2);
+                return true;
             }
             else
             {
