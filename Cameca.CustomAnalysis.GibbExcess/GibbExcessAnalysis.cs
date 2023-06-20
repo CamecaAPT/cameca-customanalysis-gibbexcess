@@ -74,9 +74,9 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
         return diff.X * diff.Y;
     }
 
-    static double GibbsCalculation(List<string[]> rawLines, int ionTypeIndex, float selectionStart, float selectionEnd, float detectorEfficiency, IIonData ionData)
+    static double GibbsCalculation(List<string[]> rawLines, int ionTypeIndex, double selectionStart, double selectionEnd, double detectorEfficiency, IIonData ionData)
     {
-        float deltaDistance = float.Parse(rawLines[1][0]) - float.Parse(rawLines[0][0]);
+        double deltaDistance = double.Parse(rawLines[1][0]) - double.Parse(rawLines[0][0]);
         int numIn = (int)((selectionEnd - selectionStart) / deltaDistance) + 1;
 
         int[] inCounts = new int[numIn];
@@ -87,9 +87,9 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
         int totalMatrixCount = 0;
         foreach (string[] line in rawLines)
         {
-            float rowThisDistance = float.Parse(line[0]);
+            double rowThisDistance = double.Parse(line[0]);
             int rowTotalIonCount = int.Parse(line[1]);
-            int rowThisIonCount = (int)Math.Round((rowTotalIonCount * float.Parse(line[1 + ionTypeIndex]) * .01));
+            int rowThisIonCount = (int)Math.Round((rowTotalIonCount * double.Parse(line[1 + ionTypeIndex]) * .01));
             if (rowThisDistance >= selectionStart && rowThisDistance <= selectionEnd)
             {
                 inCounts[inIndex++] = rowThisIonCount;
