@@ -34,6 +34,7 @@
 	</PropertyGroup>
 
 	<ItemGroup Label="Package Dependencies">
+		<PackageReference Include="Cameca.CustomAnalysis.Interface" Version="3.2.0-alpha.9" />
 		<PackageReference Include="Cameca.CustomAnalysis.Utilities" Version="3.3.0" />
 	</ItemGroup>
 

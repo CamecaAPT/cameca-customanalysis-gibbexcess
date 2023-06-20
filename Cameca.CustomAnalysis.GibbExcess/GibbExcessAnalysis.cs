@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Documents;
 
@@ -51,9 +53,7 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
         }
 
         var rawLines = ReadFile(options.CsvFilePath); //2 is nickel
-        var gibbs = GibbsCalculation(rawLines, options.RangeOfInterest, options.SelectionStart, options.SelectionEnd, options.DetectorEfficiency, ionData);
-
-        viewBuilder.AddText("Gibbs Value", $"{gibbs}");
+        GibbsCalculation(rawLines, options.RangeOfInterest, options.SelectionStart, options.SelectionEnd, options.DetectorEfficiency, ionData, viewBuilder);
     }
 
     static bool IsRangeValid(IIonData ionData, int rangeOfInterest, out int validRangeEnd)
@@ -74,7 +74,7 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
         return diff.X * diff.Y;
     }
 
-    static double GibbsCalculation(List<string[]> rawLines, int ionTypeIndex, double selectionStart, double selectionEnd, double detectorEfficiency, IIonData ionData)
+    static void GibbsCalculation(List<string[]> rawLines, int ionTypeIndex, double selectionStart, double selectionEnd, double detectorEfficiency, IIonData ionData, IViewBuilder viewBuilder)
     {
         double deltaDistance = double.Parse(rawLines[1][0]) - double.Parse(rawLines[0][0]);
         int numIn = (int)((selectionEnd - selectionStart) / deltaDistance) + 1;
@@ -112,8 +112,14 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
 
         double theoreticalIons = peakIons / detectorEfficiency;
 
+        var gibbsExcess = theoreticalIons / CrossSectionCalculation(ionData, Coordinate.Z);
 
-        return theoreticalIons / CrossSectionCalculation(ionData, Coordinate.Z);
+        string averageMatrixStr = averageMatrix.ToString($"f{ROUNDING_LENGTH}");
+        string peakIonsStr = peakIons.ToString($"f{ROUNDING_LENGTH}");
+        string theoreticalIonsStr = theoreticalIons.ToString($"f{ROUNDING_LENGTH}");
+        string gibbsExcessStr = gibbsExcess.ToString($"f{ROUNDING_LENGTH}");
+
+        viewBuilder.AddTable("Gibbsian Excess and Intermediates", new Object[] { new GibbsRow(averageMatrixStr, peakIonsStr, theoreticalIonsStr, gibbsExcessStr)});
     }
 
     static List<string[]> ReadFile(string filePath)
@@ -130,7 +136,7 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
             while(!reader.EndOfStream)
             {
                 var line = reader.ReadLine();
-                var values = line.Split(",");
+                var values = line!.Split(",");
                 if(values.Length <= 1)
                     continue;
                 int thisBoxIonCount = int.Parse(values[1]);
@@ -142,5 +148,21 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
         }
 
         return csvLines;
+    }
+}
+
+public class GibbsRow
+{
+    public string AverageMatrix { get; }
+    public string PeakIons { get; }
+    public string TheoreticalIons { get; }
+    public string GibbsianExcess { get; }
+
+    public GibbsRow(string averageMatrix, string peakIons, string theoreticalIons, string gibbsianExcess)
+    {
+        AverageMatrix = averageMatrix;
+        PeakIons = peakIons;
+        TheoreticalIons = theoreticalIons;
+        GibbsianExcess = gibbsianExcess;
     }
 }
