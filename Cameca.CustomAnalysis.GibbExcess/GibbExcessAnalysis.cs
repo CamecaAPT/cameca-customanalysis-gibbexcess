@@ -4,12 +4,9 @@ using Cameca.CustomAnalysis.Utilities.Legacy;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Documents;
+using static Cameca.CustomAnalysis.GibbExcess.MachineModelDetails;
 
 namespace Cameca.CustomAnalysis.GibbExcess;
 
@@ -79,14 +76,19 @@ internal class GibbExcessAnalysis : ICustomAnalysis<GibbExcessOptions>
             return;
         }
 
-        if(!File.Exists(options.CsvFilePath))
+        if (!File.Exists(options.CsvFilePath))
         {
             MessageBox.Show($"Bad filepath for CSV Input File.");
             return;
         }
 
-        var rawLines = ReadFile(options.CsvFilePath); 
-        GibbsCalculation(rawLines, options.RangeOfInterest, options.SelectionStart, options.SelectionEnd, options.DetectorEfficiency, ionData, viewBuilder);
+        var rawLines = ReadFile(options.CsvFilePath);
+        double detectorEfficiency;
+        if (options.DetectorEfficiency == null)
+            detectorEfficiency = MachineTypeEfficiency[options.MachineModel] / 100;
+        else
+            detectorEfficiency = (double)options.DetectorEfficiency / 100;
+        GibbsCalculation(rawLines, options.RangeOfInterest, options.SelectionStart, options.SelectionEnd, detectorEfficiency, ionData, viewBuilder);
     }
 
     static bool IsRangeValid(IIonData ionData, int rangeOfInterest, out int validRangeEnd)
