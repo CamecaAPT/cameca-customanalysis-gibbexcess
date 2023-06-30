@@ -5,16 +5,8 @@ using static Cameca.CustomAnalysis.GibbExcess.MachineModelDetails;
 
 namespace Cameca.CustomAnalysis.GibbExcess;
 
-public class GibbExcessOptions : BindableBase
+public class GibbExcessProperties : BindableBase
 {
-    private string csvInputFilePath = "";
-    [Display(Name = "1D Comp. File:", Description = "Path of CSV file that has the 1D composition from an ROI in it")]
-    public string CsvFilePath
-    {
-        get => csvInputFilePath;
-        set => SetProperty(ref csvInputFilePath, value);
-    }
-
     private int rangeOfInterest;
     [Display(Name = "Range #:", Description = "Number corresponding to the range of interest")]
     public int RangeOfInterest
@@ -85,16 +77,14 @@ public static class MachineModelDetails
      * 5000R:   MCP = 80    Mesh = 65   => 52
      * 6000R:   MCP = 80    Mesh = 65   => 52
      * EIKOS:   MCP = 55    Mesh = 65   => 35.75
-     * TOMO:    MCP = 80    Mesh = ??   => ??80??
      */
-    public enum MachineType { _5000S, INVIZIO, _5000R, _6000R, EIKOS, TOMO, other }
+    public enum MachineType { _5000S, INVIZIO, _5000R, _6000R, EIKOS, other }
     public static readonly Dictionary<MachineType, double> MachineTypeEfficiency = new()
     {
         { MachineType._5000S, 80 },
         { MachineType.INVIZIO, 62.4 },
         { MachineType._5000R, 52 },
         { MachineType._6000R, 52 },
-        { MachineType.EIKOS, 35.75 },
-        { MachineType.TOMO, 80 },
+        { MachineType.EIKOS, 35.75 }
     };
 }

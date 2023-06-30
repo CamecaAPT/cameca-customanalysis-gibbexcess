@@ -16,6 +16,7 @@ public class GibbExcessModule : IModule
 #pragma warning disable CS0618 // Type or member is obsolete
         containerRegistry.AddCustomAnalysisUtilities(options => options.UseLegacy = true);
 #pragma warning restore CS0618 // Type or member is obsolete
+        containerRegistry.RegisterBasicAnalysis();
 
         containerRegistry.Register<GibbExcessAnalysis>();
         containerRegistry.Register<object, GibbExcessNode>(GibbExcessNode.UniqueId);
@@ -27,6 +28,6 @@ public class GibbExcessModule : IModule
     public void OnInitialized(IContainerProvider containerProvider)
     {
         var extensionRegistry = containerProvider.Resolve<IExtensionRegistry>();
-        extensionRegistry.RegisterAnalysisView<LegacyCustomAnalysisView, GibbExcessViewModel>(AnalysisViewLocation.Top);
+        extensionRegistry.RegisterAnalysisView<BasicCustomAnalysisView, GibbExcessViewModel>(AnalysisViewLocation.Top);
     }
 }

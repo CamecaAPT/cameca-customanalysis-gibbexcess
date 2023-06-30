@@ -5,12 +5,12 @@ using Cameca.CustomAnalysis.Utilities.Legacy;
 namespace Cameca.CustomAnalysis.GibbExcess.Core;
 
 internal class GibbExcessViewModel
-    : LegacyCustomAnalysisViewModelBase<GibbExcessNode, GibbExcessAnalysis, GibbExcessOptions>
+    : BasicCustomAnalysisViewModel<GibbExcessNode, GibbExcessAnalysis, GibbExcessProperties>
 {
     public const string UniqueId = "Cameca.CustomAnalysis.GibbExcess.GibbExcessViewModel";
 
-    public GibbExcessViewModel(IAnalysisViewModelBaseServices services, Func<IViewBuilder> viewBuilderFactory)
-        : base(services, viewBuilderFactory)
+    public GibbExcessViewModel(IAnalysisViewModelBaseServices services)
+        : base(services)
     {
     }
 }
