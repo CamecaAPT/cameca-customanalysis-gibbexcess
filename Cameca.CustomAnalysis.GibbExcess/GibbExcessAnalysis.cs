@@ -45,7 +45,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         IProgress<double>? progress,
         CancellationToken cancellationToken)
     {
-        Vector3 bounds = resources.IonDataOwnerNode.Region?.GetDimensions() ?? ionData.Extents.GetDimensions();
+        //Vector3 bounds = resources.IonDataOwnerNode.Region?.GetDimensions() ?? ionData.Extents.GetDimensions();
 
         (var isValid, var rawLines) = await ValidateInput(ionData, properties, resources);
 
@@ -189,7 +189,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         INodeResource? concentrationNode = null;
         foreach (var sibling in ownerNode.Children)
         {
-            if (sibling.TypeId == "ConcentrationProfile1D")
+            if (sibling.TypeId == "ConcentrationProfile1D" || sibling.TypeId == "ProxigramNode")
             {
                 concentrationNode = sibling;
                 break;
@@ -217,7 +217,9 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         bool isValid = true;
         List<string[]>? rawLines = null;
 
-        if (!Has1DCompOrProxigramSibling(resources, outBuilder))
+        (var hasGoodSibling, var siblingType) = Has1DCompOrProxigramSibling(resources, outBuilder);
+
+        if (!hasGoodSibling)
             isValid = false;
 
         if (isValid)
@@ -230,9 +232,12 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
                 isValid = false;
         }
 
-        if (!IsChildOfROI(resources, outBuilder))
-            isValid = false;
-
+        if(siblingType != null && siblingType == CompositionType.Comp1D)
+        {
+            if (!IsChildOfROI(resources, outBuilder))
+                isValid = false;
+        }
+        
         if (!IsRangeValid(ionData, properties, outBuilder))
             isValid = false;
 
@@ -260,19 +265,23 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         {
             outputBuilder.AppendLine("Error. Gibbsian Excess must be ran on a geometric ROI");
             return false;
-        }
+        } 
     }
 
-    static bool Has1DCompOrProxigramSibling(IResources resources, StringBuilder outputBuilder)
+    enum CompositionType { Comp1D, Proxigram };
+
+    static (bool, CompositionType?) Has1DCompOrProxigramSibling(IResources resources, StringBuilder outputBuilder)
     {
         var ownerNode = resources.IonDataOwnerNode;
         foreach (var sibling in ownerNode.Children)
         {
             if (sibling.TypeId == "ConcentrationProfile1D")
-                return true;
+                return (true, CompositionType.Comp1D);
+            if (sibling.TypeId == "ProxigramNode")
+                return (true, CompositionType.Proxigram);
         }
-        outputBuilder.AppendLine("Error. Gibbsian Excess requires a 1D Composition analysis as a sibling");
-        return false;
+        outputBuilder.AppendLine("Error. Gibbsian Excess requires a 1D Composition or Proxigram analysis as a sibling");
+        return (false, null);
     }
 
     static bool IsRangeValid(IIonData ionData, GibbExcessProperties properties, StringBuilder outBuilder)
