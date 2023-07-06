@@ -8,7 +8,7 @@ namespace Cameca.CustomAnalysis.GibbExcess;
 public class GibbExcessProperties : BindableBase
 {
     private int rangeOfInterest;
-    [Display(Name = "Range #:", Description = "Number corresponding to the range of interest")]
+    [Display(Name = "Range #:", Description = "Starting from 1, corresponds to the list of ion types in the analysis tree")]
     public int RangeOfInterest
     {
         get => rangeOfInterest;

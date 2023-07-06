@@ -45,7 +45,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         IProgress<double>? progress,
         CancellationToken cancellationToken)
     {
-        Vector3 bounds = resources.IonDataOwnerNode.Region?.GetDimensions() ?? ionData.Extents.GetDimensions();
+        //Vector3 bounds = resources.IonDataOwnerNode.Region?.GetDimensions() ?? ionData.Extents.GetDimensions();
 
         (var isValid, var rawLines) = await ValidateInput(ionData, properties, resources);
 
