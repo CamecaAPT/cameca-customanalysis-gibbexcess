@@ -8,7 +8,7 @@ namespace Cameca.CustomAnalysis.GibbExcess;
 public class GibbExcessProperties : BindableBase
 {
     private int rangeOfInterest;
-    [Display(Name = "Range #:", Description = "Number corresponding to the range of interest")]
+    [Display(Name = "Range #:", Description = "Starting from 1, corresponds to the list of ion types in the analysis tree")]
     public int RangeOfInterest
     {
         get => rangeOfInterest;
@@ -44,12 +44,12 @@ public class GibbExcessProperties : BindableBase
             else if (value == MachineType.other)
                 DetectorEfficiency = 0.0;
             else if (value != MachineType.other)
-                DetectorEfficiency = null;
+                DetectorEfficiency = MachineTypeEfficiency[value];
         }
     }
 
     private double? detectorEfficiency = 0;
-    [Display(Name = "Detector Efficiency", Description = "Corresponds to the physical machine used to take this measurement")]
+    [Display(Name = "Detector Efficiency (%)", Description = "Corresponds to the physical machine used to take this measurement")]
     public double? DetectorEfficiency
     {
         get => detectorEfficiency;
@@ -78,7 +78,20 @@ public static class MachineModelDetails
      * 6000R:   MCP = 80    Mesh = 65   => 52
      * EIKOS:   MCP = 55    Mesh = 65   => 35.75
      */
-    public enum MachineType { _5000S, INVIZIO, _5000R, _6000R, EIKOS, other }
+    public enum MachineType 
+    {
+        [Display(Name = "Leap 5000 S")]
+        _5000S,
+        [Display(Name = "Invizio 6000")]
+        INVIZIO,
+        [Display(Name = "Leap 5000 R")]
+        _5000R,
+        [Display(Name = "Leap 6000 R")]
+        _6000R,
+        [Display(Name = "Eikos")]
+        EIKOS,
+        other 
+    }
     public static readonly Dictionary<MachineType, double> MachineTypeEfficiency = new()
     {
         { MachineType._5000S, 80 },
