@@ -44,12 +44,12 @@ public class GibbExcessProperties : BindableBase
             else if (value == MachineType.other)
                 DetectorEfficiency = 0.0;
             else if (value != MachineType.other)
-                DetectorEfficiency = null;
+                DetectorEfficiency = MachineTypeEfficiency[value];
         }
     }
 
     private double? detectorEfficiency = 0;
-    [Display(Name = "Detector Efficiency", Description = "Corresponds to the physical machine used to take this measurement")]
+    [Display(Name = "Detector Efficiency (%)", Description = "Corresponds to the physical machine used to take this measurement")]
     public double? DetectorEfficiency
     {
         get => detectorEfficiency;
