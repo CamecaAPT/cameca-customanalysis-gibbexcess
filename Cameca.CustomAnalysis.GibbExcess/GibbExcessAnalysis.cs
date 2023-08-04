@@ -62,7 +62,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
             if (rawLines == null)
                 throw new Exception("Error: data valid but rawlines null");
 
-            GibbsCalculation(rawLines, properties, resources, (CompositionType)compositionType!, ionTypesDict);
+            await GibbsCalculation(rawLines, properties, resources, (CompositionType)compositionType!, ionTypesDict);
 
             resources.DataState.IsValid = true;
         }
@@ -83,7 +83,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         return ionTypes;
     }
 
-    void GibbsCalculation(List<string[]> rawLines, GibbExcessProperties properties, IResources resources, CompositionType compositionType, Dictionary<string, byte> ionTypesDict)
+    async Task GibbsCalculation(List<string[]> rawLines, GibbExcessProperties properties, IResources resources, CompositionType compositionType, Dictionary<string, byte> ionTypesDict)
     {
         var ionTypeIndex = ionTypesDict[properties.IonOfInterest];
         var selectionStart = properties.SelectionStart;
@@ -139,7 +139,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
 
         //if (!TryCrossSectionCalculation(out var crossSectionArea, ionData, Coordinate.Z))
         //    return;
-        var crossSectionArea = CrossSectionCalculation(resources, Coordinate.Z, compositionType);
+        var crossSectionArea = await CrossSectionCalculation(resources, Coordinate.Z, compositionType);
 
         double gibbsExcess = theoreticalIons / crossSectionArea!;
 
@@ -153,7 +153,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
 
     enum Coordinate { X, Y, Z };
 
-    double CrossSectionCalculation(IResources resources, Coordinate coord, CompositionType compositionType)
+    async Task<double> CrossSectionCalculation(IResources resources, Coordinate coord, CompositionType compositionType)
     {
         if (compositionType == CompositionType.Comp1D)
         {
@@ -180,7 +180,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
             var nodeData = _nodeDataProvider.Resolve(dataOwnerNode.Id);
             if (nodeData == null)
                 throw new Exception("No data on IonDataOwnerNode");
-            if (nodeData.GetData(typeof(IInterfaceData)).Result is not IInterfaceData interfaceData)
+            if (await nodeData.GetData(typeof(IInterfaceData)) is not IInterfaceData interfaceData)
                 throw new Exception("No data on IonDataOwnerNode");
 
             var metrics = interfaceData.InterfaceMetrics;

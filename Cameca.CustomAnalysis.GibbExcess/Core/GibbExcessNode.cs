@@ -16,5 +16,6 @@ internal class GibbExcessNode : BasicCustomAnalysisNodeBase<GibbExcessAnalysis, 
     public GibbExcessNode(IStandardAnalysisFilterNodeBaseServices services, GibbExcessAnalysis analysis, Func<IResources> resourceFactory)
         : base(services, analysis, resourceFactory)
     {
+        UseProgress = false;
     }
 }
