@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
 using static Cameca.CustomAnalysis.GibbExcess.MachineModelDetails;
+using System.Linq;
 
 namespace Cameca.CustomAnalysis.GibbExcess;
 
@@ -22,6 +23,13 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
     //private bool isInputValid = false;
     public bool WasJustOpened { get; set; }
     private bool hasBeenRun = false;
+
+    INodeDataProvider _nodeDataProvider;
+
+    public GibbExcessAnalysis(INodeDataProvider nodeDataProvider)
+    {
+        _nodeDataProvider = nodeDataProvider;
+    }
 
 
     public IEnumerable<ReadOnlyMemory<ulong>>? Filter(
@@ -47,14 +55,14 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
     {
         //Vector3 bounds = resources.IonDataOwnerNode.Region?.GetDimensions() ?? ionData.Extents.GetDimensions();
 
-        (var isValid, var rawLines) = await ValidateInput(ionData, properties, resources);
+        (var isValid, var rawLines, var compositionType) = await ValidateInput(ionData, properties, resources);
 
         if (isValid)
         {
             if (rawLines == null)
                 throw new Exception("Error: data valid but rawlines null");
 
-            GibbsCalculation(rawLines, properties, resources);
+            GibbsCalculation(rawLines, properties, resources, (CompositionType)compositionType!);
 
             resources.DataState.IsValid = true;
         }
@@ -64,7 +72,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         return resources.ViewBuilder;
     }
 
-    static void GibbsCalculation(List<string[]> rawLines, GibbExcessProperties properties, IResources resources)
+    void GibbsCalculation(List<string[]> rawLines, GibbExcessProperties properties, IResources resources, CompositionType compositionType)
     {
         var ionTypeIndex = properties.RangeOfInterest;
         var selectionStart = properties.SelectionStart;
@@ -120,7 +128,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
 
         //if (!TryCrossSectionCalculation(out var crossSectionArea, ionData, Coordinate.Z))
         //    return;
-        var crossSectionArea = CrossSectionCalculation(resources, Coordinate.Z);
+        var crossSectionArea = CrossSectionCalculation(resources, Coordinate.Z, compositionType);
 
         double gibbsExcess = theoreticalIons / crossSectionArea!;
 
@@ -134,24 +142,47 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
 
     enum Coordinate { X, Y, Z };
 
-    static double CrossSectionCalculation(IResources resources, Coordinate coord)
+    double CrossSectionCalculation(IResources resources, Coordinate coord, CompositionType compositionType)
     {
-        var ROIregion = resources.IonDataOwnerNode.Region!;
-        var scale = ROIregion.GetDimensions();
-
-        if (ROIregion.Shape == Shape.Cube)
+        if (compositionType == CompositionType.Comp1D)
         {
-            if (coord == Coordinate.X)
-                return scale.Y * scale.Z;
-            else if (coord == Coordinate.Y)
-                return scale.X * scale.Z;
-            else //Z direction
-                return scale.X * scale.Y;
+            var ROIregion = resources.IonDataOwnerNode.Region!;
+            var scale = ROIregion.GetDimensions();
+
+            if (ROIregion.Shape == Shape.Cube)
+            {
+                if (coord == Coordinate.X)
+                    return scale.Y * scale.Z;
+                else if (coord == Coordinate.Y)
+                    return scale.X * scale.Z;
+                else //Z direction
+                    return scale.X * scale.Y;
+            }
+            else if (ROIregion.Shape == Shape.Cylinder)
+                return Math.PI * (scale.X / 2) * (scale.Y / 2);
+            else
+                throw new Exception("should only have cube or cylinder");
         }
-        else if (ROIregion.Shape == Shape.Cylinder)
-            return Math.PI * (scale.X / 2) * (scale.Y / 2);
+        else if (compositionType == CompositionType.Proxigram)
+        {
+            var dataOwnerNode = resources.IonDataOwnerNode;
+            var nodeData = _nodeDataProvider.Resolve(dataOwnerNode.Id);
+            if (nodeData == null)
+                throw new Exception("No data on IonDataOwnerNode");
+            if (nodeData.GetData(typeof(IInterfaceData)).Result is not IInterfaceData interfaceData)
+                throw new Exception("No data on IonDataOwnerNode");
+
+            var metrics = interfaceData.InterfaceMetrics;
+
+            double area = 0;
+            foreach (var metric in metrics)
+                area += metric.SurfaceArea;
+            area /= metrics.Count();
+
+            return area;
+        }
         else
-            throw new Exception("should only have cube or cylinder");
+            throw new Exception("Should only be Comp1D or Proxigram");
     }
 
     static List<string[]> ReadFile(string filePath)
@@ -189,7 +220,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         INodeResource? concentrationNode = null;
         foreach (var sibling in ownerNode.Children)
         {
-            if (sibling.TypeId == "ConcentrationProfile1D")
+            if (sibling.TypeId == "ConcentrationProfile1D" || sibling.TypeId == "ProxigramNode")
             {
                 concentrationNode = sibling;
                 break;
@@ -211,13 +242,15 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
     /*
      * Data Validation
      */
-    static async Task<(bool, List<string[]>?)> ValidateInput(IIonData ionData, GibbExcessProperties properties, IResources resources)
+    static async Task<(bool, List<string[]>?, CompositionType?)> ValidateInput(IIonData ionData, GibbExcessProperties properties, IResources resources)
     {
         StringBuilder outBuilder = new();
         bool isValid = true;
         List<string[]>? rawLines = null;
 
-        if (!Has1DCompOrProxigramSibling(resources, outBuilder))
+        (var hasGoodSibling, var siblingType) = Has1DCompOrProxigramSibling(resources, outBuilder);
+
+        if (!hasGoodSibling)
             isValid = false;
 
         if (isValid)
@@ -230,16 +263,19 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
                 isValid = false;
         }
 
-        if (!IsChildOfROI(resources, outBuilder))
-            isValid = false;
-
+        if(siblingType != null && siblingType == CompositionType.Comp1D)
+        {
+            if (!IsChildOfROI(resources, outBuilder))
+                isValid = false;
+        }
+        
         if (!IsRangeValid(ionData, properties, outBuilder))
             isValid = false;
 
         if (!isValid)
             MessageBox.Show(outBuilder.ToString());
 
-        return (isValid, rawLines);
+        return (isValid, rawLines, siblingType);
     }
 
     static bool IsChildOfROI(IResources resources, StringBuilder outputBuilder)
@@ -260,19 +296,23 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         {
             outputBuilder.AppendLine("Error. Gibbsian Excess must be ran on a geometric ROI");
             return false;
-        }
+        } 
     }
 
-    static bool Has1DCompOrProxigramSibling(IResources resources, StringBuilder outputBuilder)
+    enum CompositionType { Comp1D, Proxigram };
+
+    static (bool, CompositionType?) Has1DCompOrProxigramSibling(IResources resources, StringBuilder outputBuilder)
     {
         var ownerNode = resources.IonDataOwnerNode;
         foreach (var sibling in ownerNode.Children)
         {
             if (sibling.TypeId == "ConcentrationProfile1D")
-                return true;
+                return (true, CompositionType.Comp1D);
+            if (sibling.TypeId == "ProxigramNode")
+                return (true, CompositionType.Proxigram);
         }
-        outputBuilder.AppendLine("Error. Gibbsian Excess requires a 1D Composition analysis as a sibling");
-        return false;
+        outputBuilder.AppendLine("Error. Gibbsian Excess requires a 1D Composition or Proxigram analysis as a sibling");
+        return (false, null);
     }
 
     static bool IsRangeValid(IIonData ionData, GibbExcessProperties properties, StringBuilder outBuilder)
