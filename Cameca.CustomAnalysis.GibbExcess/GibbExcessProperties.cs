@@ -19,7 +19,7 @@ public class GibbExcessProperties : BindableBase
         get => ionOfInterest;
         set
         {
-            if (IonNames.Contains(value))
+            if (value == "" || IonNames.Contains(value))
                 SetProperty(ref ionOfInterest, value);
             else
             {
