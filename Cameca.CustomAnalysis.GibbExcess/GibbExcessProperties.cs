@@ -39,12 +39,20 @@ public class GibbExcessProperties : BindableBase
         set
         {
             SetProperty(ref machineModel, value);
-            if (manuallySetting)
-                manuallySetting = false;
-            else if (value == MachineType.other)
-                DetectorEfficiency = 0.0;
-            else if (value != MachineType.other)
-                DetectorEfficiency = MachineTypeEfficiency[value];
+
+            if (value == MachineType.other)
+                detectorEfficiency = 0.0;
+            else
+                detectorEfficiency = MachineTypeEfficiency[value];
+
+            RaisePropertyChanged(nameof(DetectorEfficiency));
+
+            //if (manuallySetting)
+            //    manuallySetting = false;
+            //else if (value == MachineType.other)
+            //    DetectorEfficiency = 0.0;
+            //else if (value != MachineType.other)
+            //    DetectorEfficiency = MachineTypeEfficiency[value];
         }
     }
 
@@ -56,11 +64,15 @@ public class GibbExcessProperties : BindableBase
         set
         {
             SetProperty(ref detectorEfficiency, value);
-            if (value != null && value != 0.0)
-            {
-                manuallySetting = true;
-                MachineModel = MachineType.other;
-            }
+
+            machineModel = MachineType.other;
+            RaisePropertyChanged(nameof(MachineModel));
+
+            //if (value != null && value != 0.0)
+            //{
+            //    manuallySetting = true;
+            //    MachineModel = MachineType.other;
+            //}
         }
     }
 

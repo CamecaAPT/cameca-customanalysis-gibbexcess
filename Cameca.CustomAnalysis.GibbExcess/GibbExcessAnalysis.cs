@@ -1,11 +1,9 @@
 ﻿using Cameca.CustomAnalysis.Interface;
 using Cameca.CustomAnalysis.Utilities;
 using Cameca.CustomAnalysis.Utilities.ExtensionMethods;
-using Cameca.CustomAnalysis.Utilities.Legacy;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
@@ -22,7 +20,6 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
 
     //private bool isInputValid = false;
     public bool WasJustOpened { get; set; }
-    private bool hasBeenRun = false;
 
     INodeDataProvider _nodeDataProvider;
 
