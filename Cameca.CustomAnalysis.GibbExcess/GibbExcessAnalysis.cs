@@ -52,6 +52,9 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
     {
         //Vector3 bounds = resources.IonDataOwnerNode.Region?.GetDimensions() ?? ionData.Extents.GetDimensions();
 
+        var ionTypesDict = GetIonTypes(ionData);
+        properties.IonNames = ionTypesDict.Keys.ToList();
+
         (var isValid, var rawLines, var compositionType) = await ValidateInput(ionData, properties, resources);
 
         if (isValid)
@@ -59,7 +62,7 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
             if (rawLines == null)
                 throw new Exception("Error: data valid but rawlines null");
 
-            GibbsCalculation(rawLines, properties, resources, (CompositionType)compositionType!);
+            GibbsCalculation(rawLines, properties, resources, (CompositionType)compositionType!, ionTypesDict);
 
             resources.DataState.IsValid = true;
         }
@@ -69,9 +72,20 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         return resources.ViewBuilder;
     }
 
-    void GibbsCalculation(List<string[]> rawLines, GibbExcessProperties properties, IResources resources, CompositionType compositionType)
+    static Dictionary<string, byte> GetIonTypes(IIonData ionData)
     {
-        var ionTypeIndex = properties.RangeOfInterest;
+        Dictionary<string, byte> ionTypes = new();
+
+        byte count = 1;
+        foreach(var ionType in ionData.Ions)
+            ionTypes.Add(ionType.Name, count++);
+
+        return ionTypes;
+    }
+
+    void GibbsCalculation(List<string[]> rawLines, GibbExcessProperties properties, IResources resources, CompositionType compositionType, Dictionary<string, byte> ionTypesDict)
+    {
+        var ionTypeIndex = ionTypesDict[properties.IonOfInterest];
         var selectionStart = properties.SelectionStart;
         var selectionEnd = properties.SelectionEnd;
         var viewBuilder = resources.ViewBuilder;
@@ -265,9 +279,12 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
             if (!IsChildOfROI(resources, outBuilder))
                 isValid = false;
         }
-        
-        if (!IsRangeValid(ionData, properties, outBuilder))
+
+        if (properties.IonOfInterest == "")
+        {
             isValid = false;
+            outBuilder.AppendLine("Enter a valid ion to run the gibbsian excess calculation on.");
+        }
 
         if (!isValid)
             MessageBox.Show(outBuilder.ToString());
@@ -310,20 +327,6 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
         }
         outputBuilder.AppendLine("Error. Gibbsian Excess requires a 1D Composition or Proxigram analysis as a sibling");
         return (false, null);
-    }
-
-    static bool IsRangeValid(IIonData ionData, GibbExcessProperties properties, StringBuilder outBuilder)
-    {
-        int validRangeEnd = ionData.GetIonTypeCounts().Count;
-        var rangeOfInterest = properties.RangeOfInterest;
-
-        if (rangeOfInterest >= 1 && rangeOfInterest <= validRangeEnd)
-            return true;
-        else
-        {
-            outBuilder.AppendLine($"Enter values for the range of interest from 1 to {validRangeEnd} inclusive.");
-            return false;
-        }
     }
 
     static bool IsSelectionAreaValid(List<string[]> rawLines, GibbExcessProperties properties, StringBuilder outBuilder)

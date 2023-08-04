@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
+using System.Windows;
 using Prism.Mvvm;
 using static Cameca.CustomAnalysis.GibbExcess.MachineModelDetails;
 
@@ -7,12 +9,24 @@ namespace Cameca.CustomAnalysis.GibbExcess;
 
 public class GibbExcessProperties : BindableBase
 {
-    private int rangeOfInterest;
-    [Display(Name = "Range #:", Description = "Starting from 1, corresponds to the list of ion types in the analysis tree")]
-    public int RangeOfInterest
+    [Display(AutoGenerateField = false)]
+    public List<string> IonNames { get; set; } = new();
+
+    private string ionOfInterest = "";
+    [Display(Name = "Ion of Interest", Description = "The ion in which the gibbsian excess calculation will be performed on")]
+    public string IonOfInterest
     {
-        get => rangeOfInterest;
-        set => SetProperty(ref rangeOfInterest, value);
+        get => ionOfInterest;
+        set
+        {
+            if (IonNames.Contains(value))
+                SetProperty(ref ionOfInterest, value);
+            else
+            {
+                MessageBox.Show("Pick a valid ion in this analysis");
+                SetProperty(ref ionOfInterest, "");
+            }
+        }
     }
 
     private double selectionStart;
@@ -46,13 +60,6 @@ public class GibbExcessProperties : BindableBase
                 detectorEfficiency = MachineTypeEfficiency[value];
 
             RaisePropertyChanged(nameof(DetectorEfficiency));
-
-            //if (manuallySetting)
-            //    manuallySetting = false;
-            //else if (value == MachineType.other)
-            //    DetectorEfficiency = 0.0;
-            //else if (value != MachineType.other)
-            //    DetectorEfficiency = MachineTypeEfficiency[value];
         }
     }
 
@@ -67,16 +74,15 @@ public class GibbExcessProperties : BindableBase
 
             machineModel = MachineType.other;
             RaisePropertyChanged(nameof(MachineModel));
-
-            //if (value != null && value != 0.0)
-            //{
-            //    manuallySetting = true;
-            //    MachineModel = MachineType.other;
-            //}
         }
     }
 
-    private bool manuallySetting = false;
+    //public enum Symbols
+    //{
+    //    H,He,Li,Be,B,C,N,O,F,Ne,Na,Mg,Al,Si,P,S,Cl,Ar,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Ge,As,Se,Br,Kr,Rb,Sr,Y,Zr,Nb,Mo,Tc,Ru,Rh,Pd,Ag,Cd,In,
+    //    Sn,Sb,Te,I,Xe,Cs,Ba,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,Lu,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg,Tl,Pb,Bi,Po,At,Rn,Fr,Ra,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,Cf,Es,
+    //    Fm,Md,No,Lw
+    //}
 }
 
 public static class MachineModelDetails
