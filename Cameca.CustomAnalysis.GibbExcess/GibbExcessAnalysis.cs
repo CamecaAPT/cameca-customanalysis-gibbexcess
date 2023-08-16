@@ -10,6 +10,7 @@ using System.Threading;
 using System.Windows;
 using static Cameca.CustomAnalysis.GibbExcess.MachineModelDetails;
 using System.Linq;
+using System.ComponentModel.DataAnnotations;
 
 namespace Cameca.CustomAnalysis.GibbExcess;
 
@@ -137,8 +138,6 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
 
         double theoreticalIons = peakIons / detectorEfficiency;
 
-        //if (!TryCrossSectionCalculation(out var crossSectionArea, ionData, Coordinate.Z))
-        //    return;
         var crossSectionArea = await CrossSectionCalculation(resources, Coordinate.Z, compositionType);
 
         double gibbsExcess = theoreticalIons / crossSectionArea!;
@@ -286,6 +285,8 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
             outBuilder.AppendLine("Enter a valid ion to run the gibbsian excess calculation on.");
         }
 
+        outBuilder.AppendLine("\nEdit these in the Properties panel in the lower left corner.");
+
         if (!isValid)
             MessageBox.Show(outBuilder.ToString());
 
@@ -361,9 +362,16 @@ internal class GibbExcessAnalysis : IAnalysis<GibbExcessProperties>
 
 public class GibbsRow
 {
+    [Display(Name = "Average Matrix Ions (Ions / slice)")]
     public string AverageMatrixIons { get; }
+
+    [Display(Name = "Peak Ions (Ions)")]
     public string PeakIons { get; }
+
+    [Display(Name = "Theoretical Ions (Ions)")]
     public string TheoreticalIons { get; }
+
+    [Display(Name = "Gibbsian Interfacial Excess (Ions / square nm)")]
     public string GibbsianExcess { get; }
 
     public GibbsRow(string averageMatrixIons, string peakIons, string theoreticalIons, string gibbsianExcess)
