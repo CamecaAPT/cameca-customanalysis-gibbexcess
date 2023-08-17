@@ -98,24 +98,36 @@ public static class MachineModelDetails
      */
     public enum MachineType 
     {
-        [Display(Name = "Leap 5000 S")]
+        [Display(Name = "Leap 3000 S [50%]")]
+        _3000S,
+        [Display(Name = "Leap 3000 R [37%]")]
+        _3000R,
+        [Display(Name = "Leap 4000 S [50%]")]
+        _4000S,
+        [Display(Name = "Leap 4000 R [36%]")]
+        _4000R,
+        [Display(Name = "Leap 5000 S [80%]")]
         _5000S,
-        [Display(Name = "Invizio 6000")]
-        INVIZIO,
-        [Display(Name = "Leap 5000 R")]
+        [Display(Name = "Leap 5000 R [52%]")]
         _5000R,
-        [Display(Name = "Leap 6000 R")]
+        [Display(Name = "Leap 6000 R [52%]")]
         _6000R,
-        [Display(Name = "Eikos")]
+        [Display(Name = "Invizio 6000 [62.4%]")]
+        INVIZIO,
+        [Display(Name = "Eikos [35.75%]")]
         EIKOS,
         other 
     }
     public static readonly Dictionary<MachineType, double> MachineTypeEfficiency = new()
     {
+        { MachineType._3000S, 50 },
+        { MachineType._3000R, 37 },
+        { MachineType._4000S, 50 },
+        { MachineType._4000R, 36 },
         { MachineType._5000S, 80 },
-        { MachineType.INVIZIO, 62.4 },
         { MachineType._5000R, 52 },
         { MachineType._6000R, 52 },
+        { MachineType.INVIZIO, 62.4 },
         { MachineType.EIKOS, 35.75 }
     };
 }
