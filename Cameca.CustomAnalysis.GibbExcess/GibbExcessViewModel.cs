@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows;
@@ -195,7 +196,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         {
             
         }
-        else if (ionDataOwnerNode.TypeId == "iso")
+        else if (ionDataOwnerNode.TypeId == "IsosurfaceNode" || ionDataOwnerNode.TypeId == "InterfaceSubgroupNode")
         {
             //isosurface stuff
         }
@@ -211,9 +212,11 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
                 compositionType = CompositionType.Comp1D;
                 break;
             }
-            if(sibling.TypeId == "proxigram")
+            if(sibling.TypeId == "ProxigramNode")
             {
-                //todo
+                siblingNodeResource = sibling;
+                compositionType = CompositionType.Proxigram;
+                break;
             }
         }
 
@@ -298,7 +301,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
 
         //Average / BestFit Line
         //check if left and right lines are valid and not nonsense
-        if(SelectionStart < SelectionEnd && SelectionStart >= 0 && SelectionEnd <= mainChartLine[mainChartLine.Count-1].X)
+        if(SelectionStart < SelectionEnd && SelectionStart >= mainChartLine[0].X && SelectionEnd <= mainChartLine[mainChartLine.Count-1].X)
         {
             List<Vector3> points;
             float averageMatrixLevel = 0;
@@ -341,7 +344,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
             output[2] = theoreticalIons.ToString($"f{DECIMAL_PLACES}");
 
             //Gibbsian Interfacial Excess (Ions / square nm)
-            var surfaceArea = CalculateSurfaceArea((CompositionType)compositionType!, Node.Resources);
+            var surfaceArea = await CalculateSurfaceArea((CompositionType)compositionType!, Node.Resources);
             var gibbExcess = theoreticalIons / surfaceArea;
             output[3] = gibbExcess.ToString($"f{DECIMAL_PLACES}");
         }
@@ -349,7 +352,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         OutputTable.Rows.Add(output);
     }
 
-    public double CalculateSurfaceArea(CompositionType compositionType, IResources resources)
+    public async Task<double> CalculateSurfaceArea(CompositionType compositionType, IResources resources)
     {
         if (compositionType == CompositionType.Comp1D)
         {
@@ -365,7 +368,21 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         }
         else if (compositionType == CompositionType.Proxigram)
         {
-            throw new NotImplementedException();
+            var dataOwnerNode = resources.IonDataOwnerNode;
+            var nodeData = Node.NodeDataProvider.Resolve(dataOwnerNode.Id);
+            if (nodeData == null)
+                throw new Exception("No data on IonDataOwnerNode");
+            if (await nodeData.GetData(typeof(IInterfaceData)) is not IInterfaceData interfaceData)
+                throw new Exception("No data on IonDataOwnerNode");
+
+            var metrics = interfaceData.InterfaceMetrics;
+
+            double area = 0;
+            foreach (var metric in metrics)
+                area += metric.SurfaceArea;
+            area /= metrics.Count();
+
+            return area;
         }
         else
             throw new Exception("Should only be Comp1D or Proxigram");
@@ -409,8 +426,8 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
 
     List<Vector3> GetEndpointLinePoints(List<Vector3> mainChartLine, out float slope, out float yInt)
     {
-        Vector3 trueStart = new();
-        Vector3 trueEnd = new();
+        Vector3 trueStart = mainChartLine[0];
+        Vector3 trueEnd = mainChartLine[^1];
         for(int i=1; i<mainChartLine.Count; i++)
         {
             var prevPoint = mainChartLine[i - 1];
@@ -577,9 +594,12 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
 
             await dataNode.ExportToCsv.ExportToCsv(tempPath);
         }
-        else if (dataNode.TypeId == "proxigram here")
+        else if (dataNode.TypeId == "ProxigramNode")
         {
-            //TODO: proxigram stuff here
+            if (dataNode.ExportToCsv == null)
+                throw new Exception("export to csv should not be null");
+
+            await dataNode.ExportToCsv.ExportToCsv(tempPath);
         }
         else
             throw new Exception("Wrong node type");
