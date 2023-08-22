@@ -1,10 +1,9 @@
 ﻿using Cameca.CustomAnalysis.Interface;
 using Cameca.CustomAnalysis.Utilities;
-using Cameca.CustomAnalysis.Utilities.Legacy;
 using Prism.Ioc;
 using Prism.Modularity;
 
-namespace Cameca.CustomAnalysis.GibbExcess.Core;
+namespace Cameca.CustomAnalysis.GibbExcess;
 
 /// <summary>
 /// Public <see cref="IModule"/> implementation is the entry point for AP Suite to discover and configure the custom analysis
@@ -13,21 +12,19 @@ public class GibbExcessModule : IModule
 {
     public void RegisterTypes(IContainerRegistry containerRegistry)
     {
-#pragma warning disable CS0618 // Type or member is obsolete
         containerRegistry.AddCustomAnalysisUtilities(options => options.UseLegacy = true);
-#pragma warning restore CS0618 // Type or member is obsolete
-        containerRegistry.RegisterBasicAnalysis();
 
-        containerRegistry.Register<GibbExcessAnalysis>();
         containerRegistry.Register<object, GibbExcessNode>(GibbExcessNode.UniqueId);
         containerRegistry.RegisterInstance(GibbExcessNode.DisplayInfo, GibbExcessNode.UniqueId);
         containerRegistry.Register<IAnalysisMenuFactory, GibbExcessNodeMenuFactory>(nameof(GibbExcessNodeMenuFactory));
         containerRegistry.Register<object, GibbExcessViewModel>(GibbExcessViewModel.UniqueId);
+        containerRegistry.RegisterBasicAnalysis();
     }
 
     public void OnInitialized(IContainerProvider containerProvider)
     {
         var extensionRegistry = containerProvider.Resolve<IExtensionRegistry>();
-        extensionRegistry.RegisterAnalysisView<BasicCustomAnalysisView, GibbExcessViewModel>(AnalysisViewLocation.Top);
+
+        extensionRegistry.RegisterAnalysisView<GibbExcessView, GibbExcessViewModel>(AnalysisViewLocation.Default);
     }
 }
