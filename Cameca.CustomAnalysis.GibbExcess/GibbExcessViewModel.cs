@@ -291,17 +291,32 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         //main line
         ChartRenderData.Add(Node.RenderDataFactory.CreateLine(mainChartLine.ToArray(), Colors.Black, 3f, currentIon));
 
-        //left line
-        List<Vector3> leftLinePoints = new() { new(SelectionStart, 0, 0), new(SelectionStart, 0, max) };
-        ChartRenderData.Add(Node.RenderDataFactory.CreateLine(leftLinePoints.ToArray(), Color.FromRgb(0,255,0), 3f, "Selection Lines"));
-
-        //right line
-        List<Vector3> rightLinePoints = new() { new(SelectionEnd, 0, 0), new(SelectionEnd, 0, max) };
-        ChartRenderData.Add(Node.RenderDataFactory.CreateLine(rightLinePoints.ToArray(), Colors.Red, 3f, "Selection Lines"));
+        //don't graph selection lines if off the screen
+        bool doLeft = true;
+        bool doRight = true;
+        if (SelectionStart < mainChartLine[0].X || SelectionStart > mainChartLine[^1].X || SelectionEnd < mainChartLine[0].X || SelectionEnd > mainChartLine[^1].X)
+        {
+            
+            MessageBox.Show($"Invalid selection. Select from {mainChartLine[0].X} to {mainChartLine[^1].X} inclusive.");
+            if (SelectionStart < mainChartLine[0].X || SelectionStart > mainChartLine[^1].X)
+                doLeft = false;
+            if (SelectionEnd < mainChartLine[0].X || SelectionEnd > mainChartLine[^1].X)
+                doRight = false;
+        }
+        if (doLeft)
+        {
+            List<Vector3> leftLinePoints = new() { new(SelectionStart, 0, 0), new(SelectionStart, 0, max) };
+            ChartRenderData.Add(Node.RenderDataFactory.CreateLine(leftLinePoints.ToArray(), Color.FromRgb(0, 255, 0), 3f, "Selection Start"));
+        }
+        if (doRight)
+        {
+            List<Vector3> rightLinePoints = new() { new(SelectionEnd, 0, 0), new(SelectionEnd, 0, max) };
+            ChartRenderData.Add(Node.RenderDataFactory.CreateLine(rightLinePoints.ToArray(), Colors.Red, 3f, "Selection End"));
+        }
 
         //Average / BestFit Line
         //check if left and right lines are valid and not nonsense
-        if(SelectionStart < SelectionEnd && SelectionStart >= mainChartLine[0].X && SelectionEnd <= mainChartLine[mainChartLine.Count-1].X)
+        if(SelectionStart < SelectionEnd && SelectionStart >= mainChartLine[0].X && SelectionEnd <= mainChartLine[^1].X)
         {
             List<Vector3> points;
             float averageMatrixLevel = 0;
@@ -441,7 +456,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         }
 
         if (trueStart == trueEnd)
-            throw new Exception("Selection Lines must differ");
+            MessageBox.Show("Selection lines too close together.");
 
         slope = (trueEnd.Z - trueStart.Z) / (trueEnd.X - trueStart.X);
         yInt = trueStart.Z - (slope * trueStart.X);
