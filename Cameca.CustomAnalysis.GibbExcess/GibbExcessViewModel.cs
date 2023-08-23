@@ -21,7 +21,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
 {
     public const string UniqueId = "Cameca.CustomAnalysis.GibbExcess.GibbExcessViewModel";
 
-    private const int OUTPUT_ARR_LENGTH = 4;
+    private const int OUTPUT_ARR_LENGTH = 5;
     private const int DECIMAL_PLACES = 4;
 
     /*
@@ -175,6 +175,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
     {
         updateCommand = new(Update);
         OutputTable.Columns.Add("Average Matrix Ions (Ions / slice)");
+        OutputTable.Columns.Add("Average Matrix Ions (Ions / nm^2)");
         OutputTable.Columns.Add("Peak Ions (Ions)");
         OutputTable.Columns.Add("Theoretical Ions (Ions)");
         OutputTable.Columns.Add("Gibbsian Interfacial Excess (Ions / square nm)");
@@ -348,18 +349,22 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
             //Average Matrix Level (Ions / Slice)
             output[0] = averageMatrixLevel.ToString($"f{DECIMAL_PLACES}");
 
+            //Average Matrix Level (Ions / nm^2)
+            var surfaceArea = await CalculateSurfaceArea((CompositionType)compositionType!, Node.Resources);
+            var averageMatrixPerArea = averageMatrixLevel / surfaceArea;
+            output[1] = averageMatrixPerArea.ToString($"f{DECIMAL_PLACES}");
+
             //Peak Ions (Ions)
             var peakIons = CalculatePeakIons(averageMatrixLevel, distanceToThisIonCountDict);
-            output[1] = peakIons.ToString($"f{DECIMAL_PLACES}");
+            output[2] = peakIons.ToString($"f{DECIMAL_PLACES}");
 
             //Theoretical Ions (Ions)
             var theoreticalIons = (peakIons / DetectorEfficiency) * 100;
-            output[2] = theoreticalIons.ToString($"f{DECIMAL_PLACES}");
+            output[3] = theoreticalIons.ToString($"f{DECIMAL_PLACES}");
 
             //Gibbsian Interfacial Excess (Ions / square nm)
-            var surfaceArea = await CalculateSurfaceArea((CompositionType)compositionType!, Node.Resources);
             var gibbExcess = theoreticalIons / surfaceArea;
-            output[3] = gibbExcess.ToString($"f{DECIMAL_PLACES}");
+            output[4] = gibbExcess.ToString($"f{DECIMAL_PLACES}");
         }
 
         OutputTable.Rows.Add(output);
