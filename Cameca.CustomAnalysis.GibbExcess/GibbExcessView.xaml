@@ -86,7 +86,7 @@
                 </TextBox>
             </Grid>
 
-            <Label Grid.Row="2" Content="Matrix Calculation Options"/>
+            <Label Grid.Row="2" Content="Matrix Calculation Options (Orange)"/>
             <RadioButton Grid.Row="3" Content="Matrix Average" GroupName="GraphOptions" IsChecked="{Binding PureMatrixAverageSelected}">
                 <b:Interaction.Triggers>
                     <b:EventTrigger EventName="Checked">
