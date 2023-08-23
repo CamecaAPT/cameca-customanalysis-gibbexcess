@@ -12,15 +12,11 @@ internal class GibbExcessNode : StandardAnalysisNodeBase
     
     public static INodeDisplayInfo DisplayInfo { get; } = new NodeDisplayInfo("Gibbsian Excess");
 
-    private readonly IIonDataProvider _ionDataProvider;
-    private readonly IMassSpectrumRangeManagerProvider _massSpectrumRangeManagerProvider;
     private readonly ResourceFactory _resourceFactory;
 
-    public IIonDataResolver? IonDataResolver { get; private set; }
 
     public IRenderDataFactory RenderDataFactory { get; private set; }
     public INodeDataProvider NodeDataProvider { get; private set; }
-    public INodeInfoProvider NodeInfoProvider { get; private set; }
 
     public IResources? Resources { get; private set; }
 
@@ -29,19 +25,13 @@ internal class GibbExcessNode : StandardAnalysisNodeBase
     public List<string> ValidIonNames { get; } = new();
 
     public GibbExcessNode(IStandardAnalysisNodeBaseServices services,
-        IIonDataProvider ionDataProvider,
-        IMassSpectrumRangeManagerProvider massSpectrumRangeManagerProvider,
         IRenderDataFactory renderDataFactory,
         INodeDataProvider nodeDataProvider,
-        INodeInfoProvider nodeInfoProvider,
         ResourceFactory resourceFactory)
         : base(services)
     {
-        _ionDataProvider = ionDataProvider;
-        _massSpectrumRangeManagerProvider = massSpectrumRangeManagerProvider;
         RenderDataFactory = renderDataFactory;
         NodeDataProvider = nodeDataProvider;
-        NodeInfoProvider = nodeInfoProvider;
         _resourceFactory = resourceFactory;
     }
 
@@ -53,9 +43,7 @@ internal class GibbExcessNode : StandardAnalysisNodeBase
 
         Resources = _resourceFactory.CreateResource((Guid)ID);
 
-        IonDataResolver = _ionDataProvider.Resolve(eventArgs.NodeId);
-
-        var massSpectrumRangeManager = _massSpectrumRangeManagerProvider.Resolve(eventArgs.NodeId);
+        var massSpectrumRangeManager = Resources.RangeManager;
         if(massSpectrumRangeManager != null)
         {
             var ranges = massSpectrumRangeManager.GetRanges();

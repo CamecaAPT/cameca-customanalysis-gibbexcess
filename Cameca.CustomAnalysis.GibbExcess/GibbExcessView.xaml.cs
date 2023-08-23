@@ -11,15 +11,15 @@ internal partial class GibbExcessView
     {
         InitializeComponent();
 
-        Loaded += NewGibbsView_Loaded;
+        //Loaded += NewGibbsView_Loaded;
     }
 
-    private void NewGibbsView_Loaded(object sender, System.Windows.RoutedEventArgs e)
-    {
-        var task = new Task(async () => await ((GibbExcessViewModel)DataContext).GetIonData());
+    //private void NewGibbsView_Loaded(object sender, System.Windows.RoutedEventArgs e)
+    //{
+    //    var task = new Task(async () => await ((GibbExcessViewModel)DataContext).GetIonData());
 
-        task.RunSynchronously();
+    //    task.RunSynchronously();
 
-        Loaded -= NewGibbsView_Loaded;
-    }
+    //    Loaded -= NewGibbsView_Loaded;
+    //}
 }

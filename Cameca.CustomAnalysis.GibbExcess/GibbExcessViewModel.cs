@@ -27,8 +27,6 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
     /*
      * Data
      */
-    private IIonData? ionData = null;
-
     public ObservableCollection<IRenderData> ChartRenderData { get; set; } = new();
 
     private string? currentIon = null;
@@ -175,7 +173,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
     {
         updateCommand = new(Update);
         OutputTable.Columns.Add("Average Matrix Ions (Ions / slice)");
-        OutputTable.Columns.Add("Average Matrix Ions (Ions / nm^2)");
+        OutputTable.Columns.Add("Average Matrix Ions (Ions / square nm)");
         OutputTable.Columns.Add("Peak Ions (Ions)");
         OutputTable.Columns.Add("Theoretical Ions (Ions)");
         OutputTable.Columns.Add("Gibbsian Interfacial Excess (Ions / square nm)");
@@ -270,6 +268,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         currentIon = IonOfInterest;
         string fileName = await GetFile(siblingNodeData!);
         currentCsvData = ReadFile(fileName);
+        this.ionToIonIndexDict = GetIonToIndexDict();
 
         var index = ionToIonIndexDict[currentIon];
 
@@ -470,19 +469,6 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         }
 
         return ionToIndexDict;
-    }
-
-    public async Task GetIonData()
-    {
-        if (Node == null || Node.IonDataResolver == null)
-            return;
-
-        if (await Node.IonDataResolver.GetIonData() is not { } ionData)
-            return;
-
-        this.ionData = ionData;
-
-        this.ionToIonIndexDict = GetIonToIndexDict();
     }
 
     List<Vector3> GetEndpointLinePoints(List<Vector3> mainChartLine, out float slope, out float yInt)
