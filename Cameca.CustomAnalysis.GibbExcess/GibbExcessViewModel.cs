@@ -305,13 +305,11 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         }
         if (doLeft)
         {
-            List<Vector3> leftLinePoints = new() { new(SelectionStart, 0, 0), new(SelectionStart, 0, max) };
-            ChartRenderData.Add(Node.RenderDataFactory.CreateLine(leftLinePoints.ToArray(), Color.FromRgb(0, 255, 0), 3f, "Selection Start"));
+            DrawSelectionLine(true, max, mainChartLine);
         }
         if (doRight)
         {
-            List<Vector3> rightLinePoints = new() { new(SelectionEnd, 0, 0), new(SelectionEnd, 0, max) };
-            ChartRenderData.Add(Node.RenderDataFactory.CreateLine(rightLinePoints.ToArray(), Colors.Red, 3f, "Selection End"));
+            DrawSelectionLine(false, max, mainChartLine);
         }
 
         //Average / BestFit Line
@@ -365,6 +363,49 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         }
 
         OutputTable.Rows.Add(output);
+    }
+
+    public void DrawSelectionLine(bool isStart, float maxY, List<Vector3> mainChartLine)
+    {
+        float midpoint = .5f * maxY;
+        float totalGraphWidth = mainChartLine[^1].X - mainChartLine[0].X;
+        float arrowLength = totalGraphWidth / 40;
+        float xPointerLength = arrowLength / 3;
+        float yPointerLength = maxY / 20;
+        //left
+        if (isStart)
+        {
+            List<Vector3> leftLinePoints = new()
+            { 
+                new(SelectionStart, 0, 0),
+                new(SelectionStart, 0, midpoint),
+                new(SelectionStart + arrowLength, 0, midpoint),
+                new(SelectionStart + arrowLength - xPointerLength, 0, midpoint - yPointerLength),
+                new(SelectionStart + arrowLength, 0, midpoint),
+                new(SelectionStart + arrowLength - xPointerLength, 0, midpoint + yPointerLength),
+                new(SelectionStart + arrowLength, 0, midpoint),
+                new(SelectionStart, 0, midpoint),
+                new(SelectionStart, 0, maxY)
+            };
+            ChartRenderData.Add(Node.RenderDataFactory.CreateLine(leftLinePoints.ToArray(), Color.FromRgb(0, 255, 0), 3f, "Selection Start"));
+        }
+        //right
+        else
+        {
+            List<Vector3> rightLinePoints = new()
+            {
+                new(SelectionEnd, 0, 0),
+                new(SelectionEnd, 0, midpoint),
+                new(SelectionEnd - arrowLength, 0, midpoint),
+                new(SelectionEnd - arrowLength + xPointerLength, 0, midpoint - yPointerLength),
+                new(SelectionEnd - arrowLength, 0, midpoint),
+                new(SelectionEnd - arrowLength + xPointerLength, 0, midpoint + yPointerLength),
+                new(SelectionEnd - arrowLength, 0, midpoint),
+                new(SelectionEnd, 0, midpoint),
+                new(SelectionEnd, 0, maxY)
+            };
+            ChartRenderData.Add(Node.RenderDataFactory.CreateLine(rightLinePoints.ToArray(), Colors.Red, 3f, "Selection End"));
+        }
     }
 
     public async Task<double> CalculateSurfaceArea(CompositionType compositionType, IResources resources)
