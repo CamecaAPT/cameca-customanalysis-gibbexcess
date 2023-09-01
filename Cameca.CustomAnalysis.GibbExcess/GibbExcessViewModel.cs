@@ -191,7 +191,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
 
         var ionDataOwnerNode = Node.Resources.IonDataOwnerNode;
 
-        if (ionDataOwnerNode.TypeId == "RoiNode")
+        if (ionDataOwnerNode.TypeId == "RoiNode" || ionDataOwnerNode.TypeId == "TopLevelRoiNode")
         {
             
         }
