@@ -1,6 +1,7 @@
 ﻿using Cameca.CustomAnalysis.Interface;
 using Cameca.CustomAnalysis.Utilities;
 using Cameca.CustomAnalysis.Utilities.ExtensionMethods;
+using CommunityToolkit.HighPerformance;
 using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Resources;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -30,7 +32,6 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
     public ObservableCollection<IRenderData> ChartRenderData { get; set; } = new();
 
     private string? currentIon = null;
-    private List<string[]>? currentCsvData = null;
 
     private Dictionary<string, byte> ionToIonIndexDict = new();
 
@@ -258,19 +259,74 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
             return;
         }
 
-        //if(currentIon == null || currentCsvData == null || currentIon != IonOfInterest)
-        //{
-        //    currentIon = IonOfInterest;
-        //    string fileName = await GetFile(siblingNodeData!);
-        //    currentCsvData = ReadFile(fileName);
-        //}
-
         currentIon = IonOfInterest;
-        string fileName = await GetFile(siblingNodeData!);
-        currentCsvData = ReadFile(fileName);
-        this.ionToIonIndexDict = GetIonToIndexDict();
 
+        if (Node.Resources == null)
+            return;
+
+        var nodeData = Node.NodeDataProvider.Resolve(siblingNodeData!.Id);
+
+        if(nodeData == null) return;
+
+        this.ionToIonIndexDict = GetIonToIndexDict();
         var index = ionToIonIndexDict[currentIon];
+
+        uint[] data;
+        uint[] totalBinData;
+        double binWidth;
+        double startDistance;
+        //double endDistance;
+
+        if (compositionType == CompositionType.Comp1D)
+        {
+            if (!nodeData.DataTypes.Contains(typeof(IComposition1DData)))
+                return;
+
+            var compositionData = await nodeData.GetData(typeof(IComposition1DData)) as IComposition1DData;
+
+            var rawCountData = compositionData!.DistributedCounts_Ionic.ToArray();
+            data = new uint[rawCountData.GetLength(1)];
+            for (int i = 0; i < rawCountData.GetLength(1); i++)
+                data[i] = rawCountData[index, i];
+
+            var rawBinData = compositionData!.BinIonCounts.ToArray();
+            totalBinData = new uint[rawBinData.Length];
+            for (int i = 0; i < rawBinData.Length; i++)
+                totalBinData[i] = (uint)rawBinData[i];
+
+            binWidth = compositionData!.BinWidth;
+
+            var xVals = compositionData.XValues.ToArray();
+            startDistance = xVals[0];
+            //endDistance = xVals[xVals.Length - 1];
+        }
+        else if (compositionType == CompositionType.Proxigram)
+        {
+            if (!nodeData.DataTypes.Contains(typeof(IProxigramData)))
+                return;
+
+            var proxigramData = await nodeData.GetData(typeof(IProxigramData)) as IProxigramData;
+
+            var rawMultidimensionalData = proxigramData!.DistributedSumCountsInBin_Ionic.ToArray();
+            var rawPcts = proxigramData!.DistributedResults_Ionic[0].ToArray();
+
+            totalBinData = new uint[rawMultidimensionalData.GetLength(1)];
+            for(int i=0; i<rawMultidimensionalData.GetLength(1); i++)
+                totalBinData[i] = rawMultidimensionalData[0, i];
+
+            data = new uint[rawPcts.GetLength(1)];
+            for (int i = 0; i < rawPcts.GetLength(1); i++)
+                data[i] = (uint)Math.Round(rawPcts[index, i] * totalBinData[i] * .01f);
+
+            binWidth = proxigramData.BinSize;
+
+            var xVals = proxigramData.XValues.ToArray();
+            startDistance = xVals[0];
+            //endDistance = xVals[xVals.Length - 1];
+        }
+        else
+            throw new Exception("No other composition types");
+    
 
         List<Vector3> mainChartLine = new();
 
@@ -278,14 +334,16 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
 
         Dictionary<float, int> distanceToIonCountDict = new();
         Dictionary<float, int> distanceToThisIonCountDict = new();
-        foreach (var line in currentCsvData)
+        var totalDataArr = totalBinData.ToArray();
+        for(int i=0; i< data.Length; i++)
         {
-            var val = float.Parse(line[index + 2]);
+            var val = ((float)data[i] / totalDataArr[i]) * 100;
             if(val > max)
                 max = val;
-            mainChartLine.Add(new(float.Parse(line[0]), 0, val));
-            distanceToIonCountDict.Add(float.Parse(line[0]), int.Parse(line[1]));
-            distanceToThisIonCountDict.Add(float.Parse(line[0]), (int)Math.Round(val * int.Parse(line[1]) * .01f));
+            var distance = (i * binWidth) + startDistance;
+            mainChartLine.Add(new((float)distance, 0, (float)val));
+            distanceToIonCountDict.Add((float)distance, (int)totalDataArr[i]);
+            distanceToThisIonCountDict.Add((float)distance, (int)data[i]);
         }
 
         //main line
@@ -317,7 +375,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
         if(SelectionStart < SelectionEnd && SelectionStart >= mainChartLine[0].X && SelectionEnd <= mainChartLine[^1].X)
         {
             List<Vector3> points;
-            float averageMatrixLevel = 0;
+            float averageMatrixLevel;
 
             //pure matrix average
             if(PureMatrixAverageSelected)
@@ -598,61 +656,7 @@ internal class GibbExcessViewModel : AnalysisViewModelBase<GibbExcessNode>
 
         return matrixAverage / inCount;
     }
-
-    /*
-     * Static Methods
-     */
-    static List<string[]> ReadFile(string filePath)
-    {
-        List<string[]> csvLines = new();
-
-        using (var reader = new StreamReader(filePath))
-        {
-            //get rid of header information
-            reader.ReadLine();
-            reader.ReadLine();
-
-
-            while (!reader.EndOfStream)
-            {
-                var line = reader.ReadLine();
-                var values = line!.Split(",");
-                if (values.Length <= 1)
-                    continue;
-                int thisBoxIonCount = int.Parse(values[1]);
-                if (thisBoxIonCount == 0)
-                    continue;
-
-                csvLines.Add(values);
-            }
-        }
-
-        return csvLines;
-    }
-
-    static async Task<string> GetFile(INodeResource dataNode)
-    {
-        string tempPath = Path.GetTempFileName();
-
-        if (dataNode.TypeId == "ConcentrationProfile1D")
-        {
-            if (dataNode.ExportToCsv == null)
-                throw new Exception("export to csv should not be null");
-
-            await dataNode.ExportToCsv.ExportToCsv(tempPath);
-        }
-        else if (dataNode.TypeId == "ProxigramNode")
-        {
-            if (dataNode.ExportToCsv == null)
-                throw new Exception("export to csv should not be null");
-
-            await dataNode.ExportToCsv.ExportToCsv(tempPath);
-        }
-        else
-            throw new Exception("Wrong node type");
-
-        return tempPath;
-    }
+   
 
     public enum CompositionType
     {
