@@ -1,15 +1,13 @@
 ﻿using Cameca.CustomAnalysis.Interface;
 using Cameca.CustomAnalysis.Utilities;
-using Cameca.CustomAnalysis.Utilities.Legacy;
 using Prism.Events;
-using Prism.Services.Dialogs;
 
-namespace Cameca.CustomAnalysis.GibbExcess.Core;
+namespace Cameca.CustomAnalysis.GibbExcess;
 
-internal class GibbExcessNodeMenuFactory : LegacyAnalysisMenuFactoryBase
+internal class GibbExcessNodeMenuFactory : AnalysisMenuFactoryBase
 {
-    public GibbExcessNodeMenuFactory(IEventAggregator eventAggregator, IDialogService dialogService)
-        : base(eventAggregator, dialogService)
+    public GibbExcessNodeMenuFactory(IEventAggregator eventAggregator)
+        : base(eventAggregator)
     {
     }
 
